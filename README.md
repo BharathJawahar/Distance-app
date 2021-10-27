@@ -4,4 +4,8 @@ This ia an Android appliccation which helps the user to maintain their **Social 
 <br>
 <br>
 
-##Initial UI Designs
+## Initial UI Designs
+
+<img src="https://user-images.githubusercontent.com/47178038/139085688-fa156d71-36f6-45d3-b00f-53acd610029b.png" alt="Distance Logo" width="200"/>
+
+Inspiration : https://dribbble.com/shots/11293388-Mobile-Apps-Distance/attachments/2902824?mode=media
