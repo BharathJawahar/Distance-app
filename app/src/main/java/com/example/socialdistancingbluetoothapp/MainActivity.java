@@ -68,10 +68,8 @@ public class MainActivity extends AppCompatActivity {
                   arrayOfFoundBTDevices.add(bluetoothObject);
 
                   // 1. Pass context and data to the custom adapter
-                  FoundBTDevicesAdapter adapter = new FoundBTDevicesAdapter(this, arrayOfFoundBTDevices);
 
                   // 2. setListAdapter
-                  setListAdapter(adapter);
               }
           }
 

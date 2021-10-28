@@ -4,6 +4,10 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/AndroidStudioProjects/Social Distance - Bluetooth/Social-Distancing-Bluetooth-App/app/src/main/res/layout/activity_main.xml" value="0.12708333333333333" />
+        <entry key="..\:/Projects/Android Development/Android Studio/Social-Distancing-Bluetooth-App/app/src/main/res/drawable/circle.xml" value="0.37864583333333335" />
+        <entry key="..\:/Projects/Android Development/Android Studio/Social-Distancing-Bluetooth-App/app/src/main/res/drawable/ic_dot_circle_regular.xml" value="0.21614583333333334" />
+        <entry key="..\:/Projects/Android Development/Android Studio/Social-Distancing-Bluetooth-App/app/src/main/res/drawable/line.xml" value="0.21614583333333334" />
+        <entry key="..\:/Projects/Android Development/Android Studio/Social-Distancing-Bluetooth-App/app/src/main/res/layout/activity_main.xml" value="0.25" />
       </map>
     </option>
   </component>
