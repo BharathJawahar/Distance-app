@@ -1,13 +1,20 @@
 package com.example.socialdistancingbluetoothapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
@@ -20,16 +27,59 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter mBluetoothAdapter;
     public ArrayList arrayOfFoundBTDevices;
 
+    View circle;
+    TextView onOff;
+    TextView info;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        circle = (View) findViewById(R.id.circle);
+        onOff = (TextView) findViewById(R.id.onOff);
+        info = (TextView) findViewById(R.id.info);
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if( !mBluetoothAdapter.isEnabled())
         {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, 99);
+        }
+
+        if (mBluetoothAdapter.isEnabled()) {
+            onOff.setText("On");
+            info.setText("Press the circle to Turn Off");
+
+        }
+        else {
+            onOff.setText("Off");
+            info.setText("Press the circle to Turn On");
+        }
+
+    }
+
+    public void circleClick(View view) {
+        if (mBluetoothAdapter.isEnabled()) {
+            mBluetoothAdapter.disable();
+            Toast.makeText(getApplicationContext(),"Bluetooth Disabled",Toast.LENGTH_SHORT).show();
+            onOff.setText("Off");
+            info.setText("Press the circle to Turn On");
+            /*ColorDrawable[] colorDrawables = {new ColorDrawable(Color.DKGRAY)};
+            TransitionDrawable transitionDrawable = new TransitionDrawable(colorDrawables);
+            circle.setBackground(transitionDrawable);
+            transitionDrawable.startTransition(2000);*/
+
+        }
+        else {
+            mBluetoothAdapter.enable();
+            Toast.makeText(getApplicationContext(),"Bluetooth Enabled",Toast.LENGTH_SHORT).show();
+            onOff.setText("On");
+            info.setText("Press the circle to Turn Off");
+            /*ColorDrawable[] colorDrawables = {new ColorDrawable(Color.GREEN)};
+            TransitionDrawable transitionDrawable = new TransitionDrawable(colorDrawables);
+            circle.setBackground(transitionDrawable);
+            transitionDrawable.startTransition(2000);*/
         }
     }
 
