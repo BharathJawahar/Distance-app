@@ -1,166 +1,173 @@
 package com.example.socialdistancingbluetoothapp;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.TransitionDrawable;
+import android.content.IntentFilter;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
-import android.os.Bundle;
-
-import java.util.ArrayList;
-
 public class MainActivity extends AppCompatActivity {
 
+    int totalDevice = 0;
     private BluetoothAdapter mBluetoothAdapter;
-    public ArrayList arrayOfFoundBTDevices;
+    final private BroadcastReceiver mBluetoothStatusChangedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final Bundle extras = intent.getExtras();
+            final int bluetoothState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
+            switch(bluetoothState) {
+                case BluetoothAdapter.STATE_ON:
+                    Toast.makeText(context,"Bluetooth Enabled", Toast.LENGTH_SHORT).show();
+                    onOff.setText("On");
+                    info.setText("Press the circle to Turn Off");
+                    circle.setBackgroundResource(R.drawable.circle_green);
+                    break;
+                case BluetoothAdapter.STATE_OFF:
+                    Toast.makeText(context,"Bluetooth Disabled", Toast.LENGTH_SHORT).show();
+                    onOff.setText("Off");
+                    info.setText("Press the circle to Turn On");
+                    circle.setBackgroundResource(R.drawable.circle_grey);
+                    break;
+                case BluetoothAdapter.STATE_TURNING_ON:
+                    Toast.makeText(context,"Bluetooth Enabling", Toast.LENGTH_SHORT).show();
+                    break;
+                case BluetoothAdapter.STATE_TURNING_OFF:
+                    Toast.makeText(context,"Bluetooth Disabling", Toast.LENGTH_SHORT).show();
+                    break;
+            }
 
-    View circle;
-    TextView onOff;
-    TextView info;
+            String action = intent.getAction();
+            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
+
+            }
+
+            if(mBluetoothAdapter.isDiscovering()) {
+                circle.startAnimation();
+            }
+            else {
+                circle.stopAnimation();
+            }
+        }
+    };
+    final private BroadcastReceiver mBluetoothDiscoveryStatusChangedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
+                Toast.makeText(context, "Discovery Started", Toast.LENGTH_LONG).show();
+                circle.startAnimation();
+                totalDevice = 0;
+                startDiscovery.setText("Stop Discovery");
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                Toast.makeText(context, "Discovery Finished", Toast.LENGTH_LONG).show();
+                circle.stopAnimation();
+                startDiscovery.setText("Start Discovery");
+            } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                totalDevice += 1;
+                BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                Toast.makeText(context, "Bluetooth Device Found. Total Devices : " + String.valueOf(totalDevice), Toast.LENGTH_LONG).show();
+                noOfBtDev.setText(String.valueOf(totalDevice));
+            }
+            if(mBluetoothAdapter.isDiscovering()) {
+                circle.startAnimation();
+            }
+            else {
+                circle.stopAnimation();
+            }
+        }
+    };
+
+    TextView onOff, info, noOfBtDev;
+    Radar circle;
+    Button startDiscovery;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        circle = (View) findViewById(R.id.circle);
+        registerReceiver(mBluetoothStatusChangedReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
+        registerReceiver(mBluetoothDiscoveryStatusChangedReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED));
+        registerReceiver(mBluetoothDiscoveryStatusChangedReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
+        registerReceiver(mBluetoothDiscoveryStatusChangedReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+
+        circle = (Radar) findViewById(R.id.circle);
         onOff = (TextView) findViewById(R.id.onOff);
         info = (TextView) findViewById(R.id.info);
+        noOfBtDev = (TextView) findViewById(R.id.noOfBluetooth);
+        startDiscovery = (Button) findViewById(R.id.button);
+
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if( !mBluetoothAdapter.isEnabled())
-        {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, 99);
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(this, "BlueTooth not supported in this device", Toast.LENGTH_LONG).show();
+            circle.setBackgroundResource(R.drawable.circle_grey);
         }
 
         if (mBluetoothAdapter.isEnabled()) {
             onOff.setText("On");
+            android.util.Log.d("Debug on MainActivity", "onCreate: Bluetooth already Enabled");
             info.setText("Press the circle to Turn Off");
+            circle.setBackgroundResource(R.drawable.circle_green);
 
-        }
-        else {
+        } else {
             onOff.setText("Off");
             info.setText("Press the circle to Turn On");
-        }
-
-    }
-
-    public void circleClick(View view) {
-        if (mBluetoothAdapter.isEnabled()) {
-            mBluetoothAdapter.disable();
-            Toast.makeText(getApplicationContext(),"Bluetooth Disabled",Toast.LENGTH_SHORT).show();
-            onOff.setText("Off");
-            info.setText("Press the circle to Turn On");
-            /*ColorDrawable[] colorDrawables = {new ColorDrawable(Color.DKGRAY)};
-            TransitionDrawable transitionDrawable = new TransitionDrawable(colorDrawables);
-            circle.setBackground(transitionDrawable);
-            transitionDrawable.startTransition(2000);*/
-
-        }
-        else {
-            mBluetoothAdapter.enable();
-            Toast.makeText(getApplicationContext(),"Bluetooth Enabled",Toast.LENGTH_SHORT).show();
-            onOff.setText("On");
-            info.setText("Press the circle to Turn Off");
-            /*ColorDrawable[] colorDrawables = {new ColorDrawable(Color.GREEN)};
-            TransitionDrawable transitionDrawable = new TransitionDrawable(colorDrawables);
-            circle.setBackground(transitionDrawable);
-            transitionDrawable.startTransition(2000);*/
+            circle.setBackgroundResource(R.drawable.circle_grey);
         }
     }
 
     @Override
-    protected void onPause()
-    {
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(mBluetoothStatusChangedReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
+        registerReceiver(mBluetoothDiscoveryStatusChangedReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED));
+        registerReceiver(mBluetoothDiscoveryStatusChangedReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
+        registerReceiver(mBluetoothDiscoveryStatusChangedReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+    }
+
+    @Override
+    protected void onPause() {
         super.onPause();
-        mBluetoothAdapter.cancelDiscovery();
+        unregisterReceiver(mBluetoothStatusChangedReceiver);
+        unregisterReceiver(mBluetoothDiscoveryStatusChangedReceiver);
+        if(mBluetoothAdapter.isDiscovering())   mBluetoothAdapter.cancelDiscovery();
     }
 
-    private void displayListOfFoundDevices() {
-        arrayOfFoundBTDevices = new ArrayList<BluetoothObject>();
-        mBluetoothAdapter.startDiscovery();
-        final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-          @Override
-          public void onReceive(Context context, Intent intent)
-          {
-              String action = intent.getAction();
-              // When discovery finds a device
-              if (BluetoothDevice.ACTION_FOUND.equals(action))
-              {
-                  // Get the bluetoothDevice object from the Intent
-                  BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-
-                  // Get the "RSSI" to get the signal strength as integer,
-                  // but should be displayed in "dBm" units
-                  int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI,Short.MIN_VALUE);
-
-                  // Create the device object and add it to the arrayList of devices
-                  BluetoothObject bluetoothObject = new BluetoothObject();
-                  bluetoothObject.setName(device.getName());
-                  bluetoothObject.setAddress(device.getAddress());
-                  bluetoothObject.setState(device.getBondState());
-                  bluetoothObject.setStrength(rssi);
-
-                  arrayOfFoundBTDevices.add(bluetoothObject);
-
-                  // 1. Pass context and data to the custom adapter
-
-                  // 2. setListAdapter
-              }
-          }
-
-        };
-
-    }
-}
-
-class BluetoothObject {
-    String name, address;
-    int strength, state;
-
-    public void setName(String name) {
-        this.name = name;
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(mBluetoothStatusChangedReceiver);
+        unregisterReceiver(mBluetoothDiscoveryStatusChangedReceiver);
+        super.onDestroy();
     }
 
-    public void setState(int state) {
-        this.state = state;
+    public void circleClick(View view) throws InterruptedException {
+        if (mBluetoothAdapter.isEnabled()) {
+            mBluetoothAdapter.disable();
+            circle.stopAnimation();
+
+        } else {
+            mBluetoothAdapter.enable();
+        }
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void startDiscover(View view) {
+        if(mBluetoothAdapter.isDiscovering()){
+            mBluetoothAdapter.cancelDiscovery();
+            circle.stopAnimation();
+        }
+        else mBluetoothAdapter.startDiscovery();
+
     }
 
-    public void setStrength(int strength) {
-        this.strength = strength;
-    }
-
-    public int getStrength() {
-        return strength;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public int getState() {
-        return state;
-    }
 }
