@@ -1,5 +1,6 @@
 package com.example.socialdistancingbluetoothapp;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -7,6 +8,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -38,24 +40,6 @@ public class MainActivity extends AppCompatActivity {
                     info.setText("Press the circle to Turn On");
                     circle.setBackgroundResource(R.drawable.circle_grey);
                     break;
-                case BluetoothAdapter.STATE_TURNING_ON:
-                    Toast.makeText(context,"Bluetooth Enabling", Toast.LENGTH_SHORT).show();
-                    break;
-                case BluetoothAdapter.STATE_TURNING_OFF:
-                    Toast.makeText(context,"Bluetooth Disabling", Toast.LENGTH_SHORT).show();
-                    break;
-            }
-
-            String action = intent.getAction();
-            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-
-            }
-
-            if(mBluetoothAdapter.isDiscovering()) {
-                circle.startAnimation();
-            }
-            else {
-                circle.stopAnimation();
             }
         }
     };
@@ -67,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(context, "Discovery Started", Toast.LENGTH_LONG).show();
                 circle.startAnimation();
                 totalDevice = 0;
+                noOfBtDev.setText(String.valueOf(totalDevice));
                 startDiscovery.setText("Stop Discovery");
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                 Toast.makeText(context, "Discovery Finished", Toast.LENGTH_LONG).show();
@@ -75,9 +60,22 @@ public class MainActivity extends AppCompatActivity {
             } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 totalDevice += 1;
                 BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Toast.makeText(context, "Bluetooth Device Found. Total Devices : " + String.valueOf(totalDevice), Toast.LENGTH_LONG).show();
+                int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI,Short.MIN_VALUE);
+                Toast.makeText(context, "Bluetooth Device Found. Total Devices : " + String.valueOf(totalDevice) + "\nStrength : " + String.valueOf(rssi), Toast.LENGTH_LONG).show();
                 noOfBtDev.setText(String.valueOf(totalDevice));
-            }
+                if((-1 * rssi) < 55) {
+                    Toast.makeText(context, "Please maintain social distance", Toast.LENGTH_LONG).show();
+                    new AlertDialog.Builder(context)
+                            .setTitle("Please maintain your Social Distance")
+                            .setMessage("You have a very close contact with " + device.getName())
+                            .setCancelable(false)
+                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Whatever...
+                        }
+                    }).show();
+                }          }
             if(mBluetoothAdapter.isDiscovering()) {
                 circle.startAnimation();
             }
@@ -167,7 +165,6 @@ public class MainActivity extends AppCompatActivity {
             circle.stopAnimation();
         }
         else mBluetoothAdapter.startDiscovery();
-
     }
 
 }
