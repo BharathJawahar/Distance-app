@@ -1,9 +1,16 @@
 package com.example.socialdistancingbluetoothapp;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import android.media.MediaPlayer;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -11,8 +18,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -44,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     final private BroadcastReceiver mBluetoothDiscoveryStatusChangedReceiver = new BroadcastReceiver() {
+        @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -60,26 +68,35 @@ public class MainActivity extends AppCompatActivity {
             } else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 totalDevice += 1;
                 BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI,Short.MIN_VALUE);
+                int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
                 Toast.makeText(context, "Bluetooth Device Found. Total Devices : " + String.valueOf(totalDevice) + "\nStrength : " + String.valueOf(rssi), Toast.LENGTH_LONG).show();
                 noOfBtDev.setText(String.valueOf(totalDevice));
-                if((-1 * rssi) < 55) {
+                if ((-1 * rssi) < 55) {
+                    NotificationChannel notificationChannel = new NotificationChannel("channel1", "Channel 1", NotificationManager.IMPORTANCE_HIGH);
+                    notificationChannel.setDescription("This is Channel ");
+                    NotificationManager notificationManager = getSystemService(NotificationManager.class);
+                    notificationManager.createNotificationChannel(notificationChannel);
+                    NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
+                    Notification notification = new NotificationCompat.Builder(context, "channel1").setSmallIcon(R.drawable.ic_one).setContentTitle("Please maintain Social Distance").setContentText("You have a very close contact with" + device.getName()).setPriority(NotificationCompat.PRIORITY_HIGH).setCategory(NotificationCompat.CATEGORY_ALARM).build();
+                    notificationManagerCompat.notify(1, notification);
+                    MediaPlayer mediaPlayer = MediaPlayer.create(context, R.raw.raw);
+                    mediaPlayer.start();
                     Toast.makeText(context, "Please maintain social distance", Toast.LENGTH_LONG).show();
                     new AlertDialog.Builder(context)
                             .setTitle("Please maintain your Social Distance")
                             .setMessage("You have a very close contact with " + device.getName())
                             .setCancelable(false)
                             .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // Whatever...
-                        }
-                    }).show();
-                }          }
-            if(mBluetoothAdapter.isDiscovering()) {
-                circle.startAnimation();
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    mediaPlayer.stop();
+                                }
+                            }).show();
+                }
             }
-            else {
+            if (mBluetoothAdapter.isDiscovering()) {
+                circle.startAnimation();
+            } else {
                 circle.stopAnimation();
             }
         }
@@ -159,12 +176,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void startDiscover(View view) {
-        if(mBluetoothAdapter.isDiscovering()){
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public void startDiscover(View view) throws InterruptedException {
+        if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();
             circle.stopAnimation();
         }
         else mBluetoothAdapter.startDiscovery();
     }
-
 }
