@@ -71,7 +71,9 @@ public class MainActivity extends AppCompatActivity {
                 int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
                 Toast.makeText(context, "Bluetooth Device Found. Total Devices : " + String.valueOf(totalDevice) + "\nStrength : " + String.valueOf(rssi), Toast.LENGTH_LONG).show();
                 noOfBtDev.setText(String.valueOf(totalDevice));
+                boolean flag = false;
                 if ((-1 * rssi) < 55) {
+                    flag = true;
                     NotificationChannel notificationChannel = new NotificationChannel("channel1", "Channel 1", NotificationManager.IMPORTANCE_HIGH);
                     notificationChannel.setDescription("This is Channel ");
                     NotificationManager notificationManager = getSystemService(NotificationManager.class);
@@ -93,6 +95,16 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             }).show();
                 }
+                DeviceModel deviceModel;
+                try {
+                    deviceModel = new DeviceModel(device.getName(), "Chennai", rssi, flag);
+                }
+                catch (Exception e) {
+                    deviceModel = new DeviceModel("error", "error", 0, false);
+                }
+                DataBaseHelper dataBaseHelper = new DataBaseHelper(MainActivity.this);
+                dataBaseHelper.addOne(deviceModel);
+
             }
             if (mBluetoothAdapter.isDiscovering()) {
                 circle.startAnimation();
@@ -174,6 +186,11 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mBluetoothAdapter.enable();
         }
+    }
+
+    public void history(View view) {
+        Intent intent = new Intent(getApplicationContext(), MainActivity2.class);
+        startActivity(intent);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)

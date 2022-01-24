@@ -132,4 +132,15 @@
             app:layout_constraintStart_toStartOf="@+id/circle"
             app:layout_constraintTop_toTopOf="@+id/circle" />
 
+        <Button
+            android:id="@+id/history"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="history"
+            android:text="History"
+            app:layout_constraintBottom_toBottomOf="@+id/textView2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/textView2"
+            app:layout_constraintTop_toTopOf="@+id/textView2" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
