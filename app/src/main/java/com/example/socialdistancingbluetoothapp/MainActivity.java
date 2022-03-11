@@ -3,8 +3,16 @@ package com.example.socialdistancingbluetoothapp;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.ScanSettings;
+import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 
 import android.app.Notification;
@@ -20,29 +28,44 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class MainActivity extends AppCompatActivity {
 
-    int totalDevice = 0;
+    public static final String TAG = MainActivity.class.getName();
+    private static final int SCAN_INTERVAL_MS = 250;
+    private static final int REQUEST_ENABLE_BT = 1;
+    DataBaseHelper dataBaseHelper;
+
     private BluetoothAdapter mBluetoothAdapter;
+    private BluetoothManager mBluetoothManager;
+    private ScanSettings mScanSettings;
+    private boolean mScanning = false;
+    private Handler mScanHandler = new Handler();
+
+
+    int totalDevice = 0;
     final private BroadcastReceiver mBluetoothStatusChangedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             final Bundle extras = intent.getExtras();
             final int bluetoothState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
-            switch(bluetoothState) {
+            switch (bluetoothState) {
                 case BluetoothAdapter.STATE_ON:
-                    Toast.makeText(context,"Bluetooth Enabled", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Bluetooth Enabled", Toast.LENGTH_SHORT).show();
                     onOff.setText("On");
                     info.setText("Press the circle to Turn Off");
                     circle.setBackgroundResource(R.drawable.circle_green);
                     break;
                 case BluetoothAdapter.STATE_OFF:
-                    Toast.makeText(context,"Bluetooth Disabled", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Bluetooth Disabled", Toast.LENGTH_SHORT).show();
                     onOff.setText("Off");
                     info.setText("Press the circle to Turn On");
                     circle.setBackgroundResource(R.drawable.circle_grey);
@@ -69,7 +92,6 @@ public class MainActivity extends AppCompatActivity {
                 totalDevice += 1;
                 BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
-                Toast.makeText(context, "Bluetooth Device Found. Total Devices : " + String.valueOf(totalDevice) + "\nStrength : " + String.valueOf(rssi), Toast.LENGTH_LONG).show();
                 noOfBtDev.setText(String.valueOf(totalDevice));
                 boolean flag = false;
                 if ((-1 * rssi) < 55) {
@@ -96,14 +118,16 @@ public class MainActivity extends AppCompatActivity {
                             }).show();
                 }
                 DeviceModel deviceModel;
-                try {
-                    deviceModel = new DeviceModel(device.getName(), "Chennai", rssi, flag);
-                }
-                catch (Exception e) {
-                    deviceModel = new DeviceModel("error", "error", 0, false);
-                }
-                DataBaseHelper dataBaseHelper = new DataBaseHelper(MainActivity.this);
+
+                LocalDateTime myDateObj = LocalDateTime.now();
+                DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+                String formattedDate = myDateObj.format(myFormatObj);
+
+                deviceModel = new DeviceModel(device.getName(), "Chennai", rssi, flag, formattedDate);
+
                 dataBaseHelper.addOne(deviceModel);
+                Toast.makeText(context, "Bluetooth Device Found. Total Devices : " + String.valueOf(totalDevice) + "\nStrength : " + String.valueOf(rssi) + "\nAdded to Database", Toast.LENGTH_LONG).show();
+
 
             }
             if (mBluetoothAdapter.isDiscovering()) {
@@ -122,6 +146,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        dataBaseHelper = new DataBaseHelper(MainActivity.this);
+
+        checkPermissions(MainActivity.this, this);
+        getBluetoothHandles();
+        enableBluetooth();
+
+        if (mBluetoothAdapter.isEnabled()) {
+            beginScanning();
+        }
+
+
 
         registerReceiver(mBluetoothStatusChangedReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
         registerReceiver(mBluetoothDiscoveryStatusChangedReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED));
@@ -152,6 +187,59 @@ public class MainActivity extends AppCompatActivity {
             info.setText("Press the circle to Turn On");
             circle.setBackgroundResource(R.drawable.circle_grey);
         }
+    }
+
+    public void beginScanning() {
+        mScanSettings = getScanSettings();
+        //mScanHandler.post(mScanRunnable);
+    }
+
+    private ScanSettings getScanSettings() {
+        ScanSettings.Builder scanSettingsBuilder = new ScanSettings.Builder();
+        scanSettingsBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY);
+
+        return scanSettingsBuilder.build();
+    }
+
+
+    private void getBluetoothHandles() {
+        mBluetoothManager =
+                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
+    }
+
+    private void enableBluetooth() {
+        // Ensures Bluetooth is available on the device and it is enabled. If not,
+        // displays a dialog requesting user permission to enable Bluetooth.
+        if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        }
+    }
+
+    public static void checkPermissions(Activity activity, Context context){
+        int PERMISSION_ALL = 1;
+        String[] PERMISSIONS = {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.BLUETOOTH_PRIVILEGED,
+        };
+
+        if(!hasPermissions(context, PERMISSIONS)){
+            ActivityCompat.requestPermissions( activity, PERMISSIONS, PERMISSION_ALL);
+        }
+    }
+
+    public static boolean hasPermissions(Context context, String... permissions) {
+        if (context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override
@@ -193,12 +281,16 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    @SuppressLint("MissingPermission")
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void startDiscover(View view) throws InterruptedException {
         if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();
             circle.stopAnimation();
         }
-        else mBluetoothAdapter.startDiscovery();
+        else {
+            mBluetoothAdapter.startDiscovery();
+            Toast.makeText(this, "Hey", Toast.LENGTH_LONG).show();
+        }
     }
 }

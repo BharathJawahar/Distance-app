@@ -1,15 +1,16 @@
 package com.example.socialdistancingbluetoothapp;
 
 public class DeviceModel {
-    private String deviceName, location;
+    private String deviceName, location, time;
     private int strength;
     private boolean danger;
 
-    public DeviceModel(String deviceName, String location, int strength, boolean danger) {
+    public DeviceModel(String deviceName, String location, int strength, boolean danger, String time) {
         this.deviceName = deviceName;
         this.location = location;
         this.strength = strength;
         this.danger = danger;
+        this.time = time;
     }
 
     public DeviceModel() {
@@ -23,6 +24,7 @@ public class DeviceModel {
                 ", location='" + location + '\'' +
                 ", strength=" + strength +
                 ", danger=" + danger +
+                ", time=" + time +
                 '}';
     }
 
@@ -32,6 +34,14 @@ public class DeviceModel {
 
     public void setDeviceName(String deviceName) {
         this.deviceName = deviceName;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
     }
 
     public String getLocation() {
